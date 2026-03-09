@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Database
+*.db
+*.db-journal
+
+# Node / Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+frontend/node_modules/
+frontend/dist/
+
+# IDEs / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.bak
