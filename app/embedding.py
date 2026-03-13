@@ -46,8 +46,14 @@ async def add_pdf_to_db(file_source, doc_id: str):
         yield {"current": i + 1, "total": total, "percent": int(((i + 1) / total) * 100)}
 
 async def retrieve_context(question):
-    q_embedding = await embed(question)
-    result = collection.query(
-        query_embeddings=[q_embedding],
-        n_results=5)
-    return "\n".join(result['documents'][0])
+    try:
+        q_embedding = await embed(question)
+        result = collection.query(
+            query_embeddings=[q_embedding],
+            n_results=5)
+        
+        if result and result.get('documents') and len(result['documents']) > 0 and len(result['documents'][0]) > 0:
+            return "\n".join(result['documents'][0])
+    except Exception as e:
+        print(f"Error in retrieve_context: {e}")
+    return ""
