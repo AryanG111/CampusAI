@@ -1,11 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Plus, Bot, User, Upload, Settings, Hash, Sparkles } from 'lucide-react';
+import { Send, Plus, Bot, User, Upload, Settings, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
+
+const suggestions = [
+  "Summarize my Calculus notes",
+  "Generate exam questions",
+  "Explain backpropagation",
+  "Compare ML models"
+];
 
 const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -14,7 +21,7 @@ const App: React.FC = () => {
   const [useWebSocket, setUseWebSocket] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [indexedFiles, setIndexedFiles] = useState<string[]>(['Calculus III', 'Machine Learning 101']); // Mock data + dynamic
+  const [indexedFiles, setIndexedFiles] = useState<string[]>(['Calculus III', 'Machine Learning 101']);
   const scrollRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -25,21 +32,41 @@ const App: React.FC = () => {
   }, [messages, isTyping]);
 
   useEffect(() => {
-    if (useWebSocket && !wsRef.current) {
-      const ws = new WebSocket('ws://localhost:8000/ask');
-      ws.onmessage = (event) => {
+    let socket: WebSocket | null = null;
+
+    if (useWebSocket) {
+      console.log("Attempting to connect to WebSocket...");
+      socket = new WebSocket('ws://localhost:8000/ask');
+
+      socket.onopen = () => {
+        console.log("WebSocket connected");
+        wsRef.current = socket;
+      };
+
+      socket.onmessage = (event) => {
+        console.log("WebSocket message received:", event.data);
         setMessages(prev => [...prev, { role: 'assistant', content: event.data }]);
         setIsTyping(false);
       };
-      ws.onerror = () => setIsTyping(false);
-      ws.onclose = () => {
+
+      socket.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        setIsTyping(false);
+      };
+
+      socket.onclose = (event) => {
+        console.log("WebSocket closed:", event.code, event.reason);
         wsRef.current = null;
       };
-      wsRef.current = ws;
-    } else if (!useWebSocket && wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
     }
+
+    return () => {
+      if (socket) {
+        console.log("Cleaning up WebSocket connection...");
+        socket.close();
+        wsRef.current = null;
+      }
+    };
   }, [useWebSocket]);
 
   const handleSend = async () => {
@@ -120,171 +147,229 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-full bg-[#f8fafc] text-slate-800 font-sans overflow-hidden">
-      <aside className="w-72 glass border-r border-black/5 flex flex-col hidden md:flex shrink-0">
-        <div className="p-6 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center glow-blue">
-            <Sparkles className="text-white w-6 h-6" />
+    <div style={{ display: 'flex', height: '100vh', width: '100%', overflow: 'hidden', fontFamily: "'Inter', sans-serif", color: '#111827', background: '#F9FAFB' }}>
+
+      {/* ─── SIDEBAR ─── */}
+      <aside style={{ width: 280, background: '#FFFFFF', borderRight: '1px solid #E5E7EB', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+
+        {/* Logo */}
+        <div style={{ padding: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Sparkles style={{ color: 'white', width: 16, height: 16 }} />
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-800">StudyGPT</h1>
+          <span style={{ fontSize: 20, fontWeight: 600, color: '#111827' }}>CampusAI</span>
         </div>
 
-        <div className="flex-1 px-4 overflow-y-auto space-y-1 mt-4">
-          <button className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 transition-all text-white font-semibold shadow-md shadow-blue-200 mb-8 border border-blue-400/20 active:scale-95">
-            <Plus size={18} />
+        {/* New Chat Button */}
+        <div style={{ padding: '0 16px', marginBottom: 24 }}>
+          <button
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 12px', borderRadius: 8, background: '#6366F1', color: 'white', fontWeight: 500, fontSize: 14, border: 'none', cursor: 'pointer' }}
+          >
+            <Plus size={16} />
             <span>New Chat</span>
           </button>
-
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] px-4 mb-4">Recent Notes</div>
-          <div className="space-y-1">
-            {indexedFiles.map((item, idx) => (
-              <motion.div
-                key={`${item}-${idx}`}
-                whileHover={{ x: 4, backgroundColor: "rgba(0,0,0,0.02)" }}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors cursor-pointer text-slate-600 hover:text-slate-900 group border border-transparent hover:border-black/5"
-              >
-                <Hash size={16} className="text-slate-600 group-hover:text-blue-500 transition-colors shrink-0" />
-                <span className="text-sm truncate font-medium">{item}</span>
-              </motion.div>
-            ))}
-          </div>
         </div>
 
-        <div className="p-4 border-t border-black/5 space-y-2">
-          <div className="space-y-3">
-            <label className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer text-slate-500 hover:text-slate-900 ${isUploading ? 'opacity-50 pointer-events-none' : 'hover:bg-black/[0.03]'}`}>
-              <Upload size={18} />
-              <span className="text-sm">Upload PDF</span>
-              <input type="file" className="hidden" accept=".pdf" onChange={handleFileUpload} />
+        {/* Sidebar Content */}
+        <div style={{ flex: 1, padding: '0 16px', overflowY: 'auto' }}>
+
+          {/* Courses Section */}
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', padding: '0 8px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+              📚 Courses
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {indexedFiles.map((item, idx) => (
+                <div
+                  key={`${item}-${idx}`}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 15, color: '#111827', transition: 'background 0.15s' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#F3F4F6')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Notes Section */}
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', padding: '0 8px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+              📂 Notes
+            </div>
+            <label
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 15, color: '#111827', transition: 'background 0.15s', opacity: isUploading ? 0.5 : 1 }}
+              onMouseEnter={(e) => !isUploading && (e.currentTarget.style.background = '#F3F4F6')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            >
+              <Upload size={16} style={{ color: '#6B7280' }} />
+              <span>Upload PDF</span>
+              <input type="file" style={{ display: 'none' }} accept=".pdf" onChange={handleFileUpload} />
             </label>
 
             {isUploading && (
-              <div className="px-4 space-y-2">
-                <div className="flex justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+              <div style={{ padding: '8px 12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6B7280', fontWeight: 500, marginBottom: 8 }}>
                   <span>Indexing...</span>
                   <span>{uploadProgress}%</span>
                 </div>
-                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                <div style={{ height: 6, width: '100%', background: '#E5E7EB', borderRadius: 999, overflow: 'hidden' }}>
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${uploadProgress}%` }}
-                    className="h-full bg-blue-600"
+                    style={{ height: '100%', background: '#6366F1' }}
                   />
                 </div>
               </div>
             )}
           </div>
-          <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-black/[0.03] transition-colors cursor-pointer text-slate-500 hover:text-slate-900">
-            <Settings size={18} />
-            <span className="text-sm">Settings</span>
+        </div>
+
+        {/* Settings */}
+        <div style={{ padding: 16, borderTop: '1px solid #E5E7EB' }}>
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 15, color: '#111827', transition: 'background 0.15s' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = '#F3F4F6')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
+            <Settings size={18} style={{ color: '#6B7280' }} />
+            <span>Settings</span>
           </div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col relative">
+      {/* ─── MAIN CONTENT ─── */}
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+
         {/* Header */}
-        <header className="h-16 border-b border-black/5 glass sticky top-0 z-10">
-          <div className="max-w-4xl mx-auto h-full flex items-center justify-between px-8">
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold text-slate-800">Deepseek-R1</span>
-                <span className="text-[10px] text-green-600 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> Online
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-6">
-              <label className="flex items-center gap-2 cursor-pointer group">
-                <span className={`text-xs transition-colors ${useWebSocket ? 'text-blue-600 font-bold' : 'text-slate-400'}`}>RAG Mode</span>
-                <div
-                  className={`w-10 h-5 rounded-full p-1 transition-colors ${useWebSocket ? 'bg-blue-600' : 'bg-slate-200'}`}
-                  onClick={() => setUseWebSocket(!useWebSocket)}
-                >
-                  <div className={`w-3 h-3 bg-white rounded-full transition-transform shadow-sm ${useWebSocket ? 'translate-x-5' : 'translate-x-0'}`} />
-                </div>
-              </label>
+        <header style={{ height: 64, borderBottom: '1px solid #E5E7EB', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', flexShrink: 0 }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: '#111827' }}>CampusAI</div>
+            <div style={{ fontSize: 13, color: '#6B7280' }}>AI Study Assistant</div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 14, fontWeight: 500, color: useWebSocket ? '#6366F1' : '#6B7280', transition: 'color 0.15s' }}>
+              Use My Notes
+            </span>
+            <div
+              onClick={() => setUseWebSocket(!useWebSocket)}
+              style={{ width: 44, height: 24, borderRadius: 12, background: useWebSocket ? '#6366F1' : '#E5E7EB', padding: 2, cursor: 'pointer', transition: 'background 0.2s', position: 'relative' }}
+            >
+              <div style={{ width: 20, height: 20, borderRadius: 10, background: 'white', boxShadow: '0 1px 2px rgba(0,0,0,0.1)', transition: 'transform 0.2s', transform: useWebSocket ? 'translateX(20px)' : 'translateX(0)' }} />
             </div>
           </div>
         </header>
 
         {/* Chat Feed */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-8 max-w-4xl mx-auto w-full scroll-smooth">
-          {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center opacity-70">
-              <Sparkles size={64} className="mb-6 text-blue-100 floating" />
-              <p className="text-xl font-medium tracking-tight text-slate-800">How can I help you study today?</p>
-              <p className="text-sm mt-2 text-slate-500">Ask a general question or enable RAG mode to query your notes.</p>
-            </div>
-          ) : (
-            <AnimatePresence initial={false}>
-              {messages.map((msg, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  className={`flex w-full gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
-                >
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-md ${msg.role === 'assistant'
-                    ? 'bg-gradient-to-br from-indigo-500 to-blue-600 text-white'
-                    : 'bg-slate-100 text-slate-500 border border-black/5'
-                    }`}>
-                    {msg.role === 'assistant' ? <Bot size={20} /> : <User size={20} />}
-                  </div>
+        <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: 24, background: '#F9FAFB' }}>
+          <div style={{ maxWidth: 800, margin: '0 auto' }}>
+            {messages.length === 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', padding: '0 16px' }}>
+                <div style={{ width: 56, height: 56, borderRadius: 16, background: '#EEF2FF', border: '1px solid #E0E7FF', color: '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
+                  <Bot size={32} />
+                </div>
+                <h2 style={{ fontSize: 32, fontWeight: 600, color: '#111827', marginBottom: 12, textAlign: 'center', letterSpacing: '-0.02em' }}>How can I help you study today?</h2>
+                <p style={{ fontSize: 16, color: '#6B7280', marginBottom: 40, textAlign: 'center', maxWidth: 420 }}>
+                  Ask questions about your notes, solve complex problems, or get explanations for difficult concepts.
+                </p>
 
-                  <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} max-w-[80%]`}>
-                    <div className={`px-5 py-3 rounded-2xl shadow-sm leading-relaxed text-[15px] ${msg.role === 'assistant'
-                      ? 'bg-white border border-black/5 text-slate-800'
-                      : 'bg-blue-600 text-white shadow-blue-100'
-                      }`}>
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
-                    </div>
-                    <span className="text-[10px] mt-1.5 text-slate-400 font-bold uppercase tracking-wider">
-                      {msg.role === 'assistant' ? 'Study Assistant' : 'You'}
-                    </span>
+                <div style={{ width: '100%', maxWidth: 600 }}>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: '#6B7280', marginBottom: 16, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Try asking:</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+                    {suggestions.map((suggestion, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => setInput(suggestion)}
+                        style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: 12, padding: 16, cursor: 'pointer', transition: 'all 0.15s' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#6366F1'; e.currentTarget.style.boxShadow = '0 4px 12px -4px rgba(99,102,241,0.2)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                      >
+                        <p style={{ fontSize: 15, fontWeight: 500, color: '#111827' }}>{suggestion}</p>
+                      </div>
+                    ))}
                   </div>
-                </motion.div>
-              ))}
-              {isTyping && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex gap-4"
-                >
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-indigo-500 text-white shadow-md">
-                    <Bot size={20} />
-                  </div>
-                  <div className="bg-white border border-black/5 px-5 py-3 rounded-2xl flex gap-1 items-center shadow-sm">
-                    <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                    <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                    <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce"></span>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          )}
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                <AnimatePresence initial={false}>
+                  {messages.map((msg, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      style={{ display: 'flex', gap: 16, flexDirection: msg.role === 'user' ? 'row-reverse' : 'row' }}
+                    >
+                      <div style={{
+                        width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                        ...(msg.role === 'assistant'
+                          ? { background: '#6366F1', color: 'white' }
+                          : { background: '#F3F4F6', color: '#6B7280', border: '1px solid #E5E7EB' })
+                      }}>
+                        {msg.role === 'assistant' ? <Bot size={20} /> : <User size={20} />}
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
+                        <div style={{
+                          padding: '12px 20px', borderRadius: 16, boxShadow: '0 1px 2px rgba(0,0,0,0.05)', lineHeight: 1.6, fontSize: 15,
+                          ...(msg.role === 'assistant'
+                            ? { background: 'white', border: '1px solid #E5E7EB', color: '#111827' }
+                            : { background: '#6366F1', color: 'white' })
+                        }}>
+                          <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{msg.content}</p>
+                        </div>
+                        <span style={{ fontSize: 12, marginTop: 8, color: '#6B7280', fontWeight: 500 }}>
+                          {msg.role === 'assistant' ? 'Study Assistant' : 'You'}
+                        </span>
+                      </div>
+                    </motion.div>
+                  ))}
+                  {isTyping && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      style={{ display: 'flex', gap: 16 }}
+                    >
+                      <div style={{ width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#6366F1', color: 'white', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                        <Bot size={20} />
+                      </div>
+                      <div style={{ background: 'white', border: '1px solid #E5E7EB', padding: '12px 20px', borderRadius: 16, display: 'flex', gap: 6, alignItems: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                        <span className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '-0.3s' }} />
+                        <span className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '-0.15s' }} />
+                        <span className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce" />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Input Area */}
-        <div className="p-8 pt-0 max-w-4xl mx-auto w-full bg-gradient-to-t from-[#f8fafc] via-[#f8fafc] to-transparent">
-          <div className="relative glass rounded-2xl p-2 group focus-within:ring-2 ring-blue-500/30 transition-all">
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder={useWebSocket ? "Ask about your notes..." : "Enter your prompt here..."}
-              className="w-full bg-transparent border-none outline-none py-4 pl-6 pr-14 text-sm placeholder:text-slate-400 text-slate-800"
-            />
-            <button
-              onClick={handleSend}
-              className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center hover:bg-blue-500 transition-colors shadow-md shadow-blue-200"
-            >
-              <Send size={18} className="text-white" />
-            </button>
+        <div style={{ padding: '8px 24px 24px', background: '#F9FAFB', flexShrink: 0 }}>
+          <div style={{ maxWidth: 800, margin: '0 auto', position: 'relative' }}>
+            <div style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: 12, padding: 4, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center' }}>
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                placeholder={useWebSocket ? "Ask about your notes..." : "Enter your prompt here..."}
+                style={{ flex: 1, border: 'none', outline: 'none', padding: '12px 16px', fontSize: 15, color: '#111827', background: 'transparent', fontFamily: "'Inter', sans-serif" }}
+              />
+              <button
+                onClick={handleSend}
+                style={{ width: 36, height: 36, background: '#6366F1', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', marginRight: 4, flexShrink: 0 }}
+              >
+                <Send size={16} style={{ color: 'white' }} />
+              </button>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12, fontSize: 13, fontWeight: 500, color: '#9CA3AF' }}>
+              <span>CampusAI</span>
+              <span style={{ width: 4, height: 4, borderRadius: 2, background: '#D1D5DB' }} />
+              <span>Version: DeepSeek-R1</span>
+            </div>
           </div>
-          <p className="text-[10px] text-center mt-4 text-slate-400 uppercase tracking-widest font-bold">
-            Built for Students • Deepseek-R1 Powered
-          </p>
         </div>
       </main>
     </div>
