@@ -2,35 +2,24 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, D
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.orm import sessionmaker
+from db import SessionLocal, engine, Base
 from jose import JWTError, jwt 
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from typing import Optional
 from pydantic import BaseModel
 import httpx
+import jwt
+from sqlalchemy.orm import Session
+from typing import List
 import os
 import uuid
+import bcrypt
 import json
+from models import users
 from app.embedding import add_pdf_to_db, retrieve_context
+from app.config import DATABASE_URL, MODEL, OLLAMA_URL, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
-OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
-MODEL = "phi3:mini"
-
-
-#CONFIG
-Database_URL = "sqlite:///./test.db"
-SECRET_KEY = "superseacdfsdjfbjlnl"
-ALGORITHM="HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-#DataBase Setup
-engine = create_engine(
-    Database_URL, connect_args={"check_same_thread": False}
-)
-
-SessionLocal = sessionmaker()
 app = FastAPI(title="Local LLM API", version="1.0")
 
 # Setup CORS
@@ -94,6 +83,32 @@ async def ask_ollama(message: str, system_prompt: str | None = None, model: str 
 def health():
     return {"Status": "StudyGPT is running"}
 
+# -------------Auth----------------
+def verify_password(plain_password:str, hashed_password:str):
+    return bcrypt.check_password_hash(hashed_password, plain_password)
+
+def get_password_hash(password):
+    return bcrypt.generate_password_hash(password)
+
+async def create_user(username: str, email: str, password: str):
+    user = users(username=username, email=email, password=get_password_hash(password))
+    db = SessionLocal()
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+def token_data(user : users):
+    return {
+        "username": user.username,
+        "email": user.email,
+        "id": user.id,
+        "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    }
+
+
+    
+
 # -------------Chat With Ollama----------------
 @app.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
@@ -119,10 +134,17 @@ async def ask_llm(websocket: WebSocket):
                 
                 print(f"Context: {'Found' if context else 'None'}")
                 
+                # If the context is completely empty, don't even ask the LLM. 
+                # This explicitly prevents the AI from answering using its own knowledge.
+                if not context or not context.strip():
+                    await websocket.send_text("Not Found in notes.")
+                    print("Sent 'Not Found in notes' directly because context was empty.")
+                    continue
+                
                 system_prompt = (
                     "You are a helpful assistant for students. "
-                    "Use the following context to answer the question, "
-                    "if answer is not in context, say: 'Not Found in notes':\n\n"
+                    "You MUST answer the question strictly using ONLY the provided context below.\n"
+                    "If the exact answer is not in the context, strictly say: 'Not Found in notes'.\n\n"
                     f"Context: {context}"
                 )
                 

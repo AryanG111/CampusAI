@@ -35,6 +35,7 @@ async def add_pdf_to_db(file_source, doc_id: str):
     total = len(chunks)
     if total == 0:
         yield {"current": 0, "total": 0, "percent": 100}
+        print("PDF is empty")
         return
 
     for i, text in enumerate(chunks):

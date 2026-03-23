@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Plus, Bot, User, Upload, Settings, Sparkles } from 'lucide-react';
+import { Send, Plus, Bot, User, Upload, Settings, Sparkles, BookOpen, Folder, GraduationCap, Library } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Message {
@@ -154,16 +154,18 @@ const App: React.FC = () => {
 
         {/* Logo */}
         <div style={{ padding: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Sparkles style={{ color: 'white', width: 16, height: 16 }} />
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: '#111827', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <GraduationCap style={{ color: 'white', width: 18, height: 18 }} />
           </div>
-          <span style={{ fontSize: 20, fontWeight: 600, color: '#111827' }}>CampusAI</span>
+          <span style={{ fontSize: 20, fontWeight: 600, color: '#111827', letterSpacing: '-0.02em' }}>CampusAI</span>
         </div>
 
         {/* New Chat Button */}
-        <div style={{ padding: '0 16px', marginBottom: 24 }}>
+        <div style={{ padding: '0 16px', marginBottom: 28 }}>
           <button
-            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 12px', borderRadius: 8, background: '#6366F1', color: 'white', fontWeight: 500, fontSize: 14, border: 'none', cursor: 'pointer' }}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 12px', borderRadius: 8, background: '#111827', color: 'white', fontWeight: 500, fontSize: 14, border: '1px solid #111827', cursor: 'pointer', transition: 'all 0.2s' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#111827'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#111827'; e.currentTarget.style.color = 'white'; }}
           >
             <Plus size={16} />
             <span>New Chat</span>
@@ -175,8 +177,8 @@ const App: React.FC = () => {
 
           {/* Courses Section */}
           <div style={{ marginBottom: 32 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', padding: '0 8px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-              📚 Courses
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#9CA3AF', padding: '0 8px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <BookOpen size={14} /> Courses
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {indexedFiles.map((item, idx) => (
@@ -194,8 +196,8 @@ const App: React.FC = () => {
 
           {/* Notes Section */}
           <div style={{ marginBottom: 32 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', padding: '0 8px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-              📂 Notes
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#9CA3AF', padding: '0 8px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <Folder size={14} /> Notes
             </div>
             <label
               style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 15, color: '#111827', transition: 'background 0.15s', opacity: isUploading ? 0.5 : 1 }}
@@ -217,7 +219,7 @@ const App: React.FC = () => {
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${uploadProgress}%` }}
-                    style={{ height: '100%', background: '#6366F1' }}
+                    style={{ height: '100%', background: '#111827' }}
                   />
                 </div>
               </div>
@@ -248,12 +250,12 @@ const App: React.FC = () => {
             <div style={{ fontSize: 13, color: '#6B7280' }}>AI Study Assistant</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 14, fontWeight: 500, color: useWebSocket ? '#6366F1' : '#6B7280', transition: 'color 0.15s' }}>
-              Use My Notes
+            <span style={{ fontSize: 14, fontWeight: 500, color: useWebSocket ? '#111827' : '#9CA3AF', transition: 'color 0.15s' }}>
+              Use Notes Context
             </span>
             <div
               onClick={() => setUseWebSocket(!useWebSocket)}
-              style={{ width: 44, height: 24, borderRadius: 12, background: useWebSocket ? '#6366F1' : '#E5E7EB', padding: 2, cursor: 'pointer', transition: 'background 0.2s', position: 'relative' }}
+              style={{ width: 44, height: 24, borderRadius: 12, background: useWebSocket ? '#111827' : '#E5E7EB', padding: 2, cursor: 'pointer', transition: 'background 0.2s', position: 'relative' }}
             >
               <div style={{ width: 20, height: 20, borderRadius: 10, background: 'white', boxShadow: '0 1px 2px rgba(0,0,0,0.1)', transition: 'transform 0.2s', transform: useWebSocket ? 'translateX(20px)' : 'translateX(0)' }} />
             </div>
@@ -265,8 +267,8 @@ const App: React.FC = () => {
           <div style={{ maxWidth: 800, margin: '0 auto' }}>
             {messages.length === 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', padding: '0 16px' }}>
-                <div style={{ width: 56, height: 56, borderRadius: 16, background: '#EEF2FF', border: '1px solid #E0E7FF', color: '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
-                  <Bot size={32} />
+                <div style={{ width: 56, height: 56, borderRadius: 16, background: '#F3F4F6', border: '1px solid #E5E7EB', color: '#111827', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
+                  <Library size={30} strokeWidth={1.5} />
                 </div>
                 <h2 style={{ fontSize: 32, fontWeight: 600, color: '#111827', marginBottom: 12, textAlign: 'center', letterSpacing: '-0.02em' }}>How can I help you study today?</h2>
                 <p style={{ fontSize: 16, color: '#6B7280', marginBottom: 40, textAlign: 'center', maxWidth: 420 }}>
@@ -281,7 +283,7 @@ const App: React.FC = () => {
                         key={idx}
                         onClick={() => setInput(suggestion)}
                         style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: 12, padding: 16, cursor: 'pointer', transition: 'all 0.15s' }}
-                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#6366F1'; e.currentTarget.style.boxShadow = '0 4px 12px -4px rgba(99,102,241,0.2)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#111827'; e.currentTarget.style.boxShadow = '0 4px 12px -4px rgba(0,0,0,0.1)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)'; }}
                       >
                         <p style={{ fontSize: 15, fontWeight: 500, color: '#111827' }}>{suggestion}</p>
@@ -303,10 +305,10 @@ const App: React.FC = () => {
                       <div style={{
                         width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
                         ...(msg.role === 'assistant'
-                          ? { background: '#6366F1', color: 'white' }
-                          : { background: '#F3F4F6', color: '#6B7280', border: '1px solid #E5E7EB' })
+                          ? { background: 'white', color: '#111827', border: '1px solid #E5E7EB' }
+                          : { background: '#111827', color: 'white' })
                       }}>
-                        {msg.role === 'assistant' ? <Bot size={20} /> : <User size={20} />}
+                        {msg.role === 'assistant' ? <Library size={18} strokeWidth={2} /> : <User size={18} />}
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
@@ -314,7 +316,7 @@ const App: React.FC = () => {
                           padding: '12px 20px', borderRadius: 16, boxShadow: '0 1px 2px rgba(0,0,0,0.05)', lineHeight: 1.6, fontSize: 15,
                           ...(msg.role === 'assistant'
                             ? { background: 'white', border: '1px solid #E5E7EB', color: '#111827' }
-                            : { background: '#6366F1', color: 'white' })
+                            : { background: '#F3F4F6', border: '1px solid #E5E7EB', color: '#111827' })
                         }}>
                           <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{msg.content}</p>
                         </div>
@@ -330,8 +332,8 @@ const App: React.FC = () => {
                       animate={{ opacity: 1 }}
                       style={{ display: 'flex', gap: 16 }}
                     >
-                      <div style={{ width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#6366F1', color: 'white', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-                        <Bot size={20} />
+                      <div style={{ width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white', color: '#111827', border: '1px solid #E5E7EB', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                        <Library size={18} strokeWidth={2} />
                       </div>
                       <div style={{ background: 'white', border: '1px solid #E5E7EB', padding: '12px 20px', borderRadius: 16, display: 'flex', gap: 6, alignItems: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                         <span className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '-0.3s' }} />
@@ -359,7 +361,9 @@ const App: React.FC = () => {
               />
               <button
                 onClick={handleSend}
-                style={{ width: 36, height: 36, background: '#6366F1', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', marginRight: 4, flexShrink: 0 }}
+                style={{ width: 36, height: 36, background: '#111827', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', marginRight: 4, flexShrink: 0, transition: 'background 0.2s' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#374151')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = '#111827')}
               >
                 <Send size={16} style={{ color: 'white' }} />
               </button>
