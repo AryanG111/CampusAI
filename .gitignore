@@ -8,6 +8,8 @@ venv/
 # Database
 *.db
 *.db-journal
+chroma.db
+chroma.db/
 
 # Node / Frontend
 node_modules/

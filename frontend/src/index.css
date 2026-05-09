@@ -43,3 +43,60 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.2);
 }
+
+/* Markdown Content Styling */
+.markdown-content p {
+  margin: 0;
+}
+.markdown-content p + p {
+  margin-top: 0.75rem;
+}
+.markdown-content ul, .markdown-content ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+.markdown-content li {
+  margin: 0.25rem 0;
+}
+.markdown-content h1, .markdown-content h2, .markdown-content h3 {
+  margin: 1rem 0 0.5rem 0;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.markdown-content code {
+  background: #f3f4f6;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.markdown-content pre {
+  background: #111827;
+  color: white;
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+.markdown-content pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+.markdown-content hr {
+  margin: 1rem 0;
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+}
+.markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+.markdown-content th, .markdown-content td {
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem;
+  text-align: left;
+}
+.markdown-content th {
+  background: #f9fafb;
+}
