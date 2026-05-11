@@ -20,7 +20,12 @@ interface Student {
 // --- Helpers ---
 const parseJwt = (token: string) => {
   try {
-    return JSON.parse(atob(token.split('.')[1]));
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    // Check if token is expired
+    if (payload.exp && Date.now() >= payload.exp * 1000) {
+      return null;
+    }
+    return payload;
   } catch (e) {
     return null;
   }
@@ -122,6 +127,7 @@ const StudentDashboard = ({ token, user, onLogout }: { token: string, user: any,
   const fetchSessions = async () => {
     try {
       const res = await fetch(`${API_URL}/sessions`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (res.status === 401) { onLogout(); return; }
       if (res.ok) setSessions(await res.json());
     } catch (e) { console.error(e); }
   };
@@ -146,6 +152,7 @@ const StudentDashboard = ({ token, user, onLogout }: { token: string, user: any,
     setActiveSessionId(sessionId);
     try {
       const res = await fetch(`${API_URL}/sessions/${sessionId}/messages`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (res.status === 401) { onLogout(); return; }
       if (res.ok) setMessages(await res.json());
     } catch (e) { console.error(e); }
   };
@@ -173,7 +180,10 @@ const StudentDashboard = ({ token, user, onLogout }: { token: string, user: any,
 
   useEffect(() => {
     fetch(`${API_URL}/documents`, { headers: { 'Authorization': `Bearer ${token}` } })
-      .then(res => res.json())
+      .then(res => {
+        if (res.status === 401) { onLogout(); throw new Error('Unauthorized'); }
+        return res.json();
+      })
       .then(data => setDocuments(data || []))
       .catch(console.error);
   }, [token]);
@@ -400,7 +410,7 @@ const StudentDashboard = ({ token, user, onLogout }: { token: string, user: any,
         </div>
 
         <div style={{ padding: 24 }}>
-          <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', background: 'white', borderRadius: 12, border: '1px solid #E5E7EB', padding: 4 }}>
+          <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', alignItems: 'center', background: 'white', borderRadius: 12, border: '1px solid #E5E7EB', padding: 4 }}>
             <input 
               value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()}
               placeholder="Ask a question..." style={{ flex: 1, border: 'none', padding: '12px 16px', outline: 'none', fontSize: 15 }} 
@@ -438,6 +448,7 @@ const TeacherDashboard = ({ token, user, onLogout }: { token: string, user: any,
   const fetchDocuments = async () => {
     try {
       const res = await fetch(`${API_URL}/documents`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (res.status === 401) { onLogout(); return; }
       if (res.ok) setDocuments(await res.json());
     } catch (e) { console.error(e); }
   };
@@ -470,6 +481,7 @@ const TeacherDashboard = ({ token, user, onLogout }: { token: string, user: any,
   const fetchStudents = async () => {
     try {
       const res = await fetch(`${API_URL}/students`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (res.status === 401) { onLogout(); return; }
       if (res.ok) setStudents(await res.json());
     } catch (e) { console.error(e); }
   };
@@ -526,6 +538,11 @@ const TeacherDashboard = ({ token, user, onLogout }: { token: string, user: any,
         for (const line of lines) {
           try {
             const data = JSON.parse(line);
+            if (data.error) {
+               alert(`Error: ${data.error}`);
+               setIsUploading(false);
+               return; 
+            }
             setUploadProgress(data.percent);
           } catch (e) {}
         }
@@ -704,6 +721,15 @@ export default function App() {
     setToken('');
     setUser(null);
   };
+
+  useEffect(() => {
+    if (token) {
+      const decoded = parseJwt(token);
+      if (!decoded) {
+        handleLogout();
+      }
+    }
+  }, [token]);
 
   if (!token || !user) {
     return <Login onLogin={handleLogin} />;
