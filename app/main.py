@@ -505,7 +505,7 @@ async def ask_llm(websocket: WebSocket, token: str = Query(...), db: Session = D
                 relevance = await validate_context(question, context)
                 print(f"Relevance Score: {relevance}")
 
-                if relevance < 0.75:
+                if relevance < 0.4:
                     msg = "The provided context is not enough to answer this question accurately."
                     if context.strip():
                         msg += " (Context found but relevance is low)"

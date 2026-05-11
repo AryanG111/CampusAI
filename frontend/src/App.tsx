@@ -227,14 +227,33 @@ const StudentDashboard = ({ token, user, onLogout }: { token: string, user: any,
 
   const handleSend = async () => {
     if (!input.trim()) return;
-    const userMessage = { role: 'user', content: input } as const;
+
+    let currentSessionId = activeSessionId;
+    if (!currentSessionId) {
+      try {
+        const res = await fetch(`${API_URL}/sessions`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: input.substring(0, 30) + (input.length > 30 ? '...' : '') })
+        });
+        if (res.ok) {
+          const newSession = await res.json();
+          setSessions(prev => [newSession, ...prev]);
+          setActiveSessionId(newSession.id);
+          currentSessionId = newSession.id;
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    const question = input;
+    const userMessage = { role: 'user', content: question } as const;
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsTyping(true);
 
     if (isRagMode && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
-      wsRef.current.send(JSON.stringify({ question: input, doc_id: selectedDocId, session_id: activeSessionId }));
+      wsRef.current.send(JSON.stringify({ question: question, doc_id: selectedDocId, session_id: currentSessionId }));
     } else {
       try {
         const response = await fetch(`${API_URL}/chat/stream`, {
@@ -243,7 +262,7 @@ const StudentDashboard = ({ token, user, onLogout }: { token: string, user: any,
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ message: input, session_id: activeSessionId })
+          body: JSON.stringify({ message: question, session_id: currentSessionId })
         });
         if (response.status === 401) { onLogout(); return; }
         if (!response.ok) {
