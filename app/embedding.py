@@ -74,16 +74,31 @@ async def add_pdf_to_db(file_source, doc_id: str, doc_name: str):
         print("PDF is empty")
         return
 
-    # batch embedding (faster)
-    texts = [c["text"] for c in chunks]
-
-    vectors = await asyncio.gather(*[embed(t) for t in texts])
+    vectors = []
+    for i, chunk in enumerate(chunks):
+        try:
+            vector = await embed(chunk["text"])
+            vectors.append(vector)
+            
+            # Yield progress for every chunk
+            percent = int(((i + 1) / total) * 100)
+            yield {
+                "current": i + 1,
+                "total": total,
+                "percent": percent
+            }
+        except Exception as e:
+            print(f"Error embedding chunk {i}: {e}")
+            # If one chunk fails, we might want to continue or stop. 
+            # For now, let's stop and report error
+            yield {"error": str(e), "percent": 0}
+            return
 
     collection.add(
-        documents=texts,
+        documents=[c["text"] for c in chunks],
         embeddings=vectors,
-        metadatas=[c["metadata"] for c in chunks],  # ✅ critical
-        ids=[c["id"] for c in chunks]               # ✅ proper IDs
+        metadatas=[c["metadata"] for c in chunks],
+        ids=[c["id"] for c in chunks]
     )
 
     yield {
